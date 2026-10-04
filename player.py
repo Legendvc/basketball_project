@@ -39,6 +39,7 @@ class Player:
         print("命中次数：", self.made)
         print("命中率：", percentage, "%")
         print("评价：", evaluate_shooting(percentage))
+        print("球员身份：篮球运动员")
 
     def save_training(self):
         percentage = calculate_percentage(
