@@ -13,6 +13,7 @@ class Player:
         self.shots = 0
         self.made = 0
 
+        self.sex = "未知"
         self.training_history = []
 
     def shoot(self, is_made):
@@ -40,6 +41,7 @@ class Player:
         print("命中率：", percentage, "%")
         print("评价：", evaluate_shooting(percentage))
         print("球员身份：篮球运动员")
+        print("性别：", self.sex)
 
     def save_training(self):
         percentage = calculate_percentage(
@@ -57,6 +59,11 @@ class Player:
 
         self.training_history.append(training)
 
+    def save_sex(self):
+        self.sex = input("请输入性别：")
+        self.save()
+
+        
     def show_training_history(self):
 
         if len(self.training_history) == 0:
@@ -79,11 +86,12 @@ class Player:
             "position": self.position,
             "shots": self.shots,
             "made": self.made,
+            "sex": self.sex,
             "training_history": self.training_history
         }
 
-        with open("player.json", "w") as file:
-            json.dump(data, file, indent=4)
+        with open("player.json", "w",encoding="utf-8") as file:
+            json.dump(data, file, indent=4,ensure_ascii=False)
 
     def show_history_summary(self):
 
@@ -106,7 +114,7 @@ class Player:
     @classmethod
     def load(cls):
         try:
-            with open("player.json", "r") as file:
+            with open("player.json", "r",encoding="utf-8") as file:
                 data = json.load(file)
 
             player = cls(
@@ -117,6 +125,7 @@ class Player:
 
             player.shots = data["shots"]
             player.made = data["made"]
+            player.sex = data.get("sex", "未知")
             player.training_history = data.get(
                "training_history",
                []

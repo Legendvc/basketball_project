@@ -15,7 +15,8 @@ while True:
     print("5. 查看训练历史")
     print("6. 查看训练汇总")
     print("7. 重置训练数据")
-    print("8. 保存并退出")
+    print("8  请输入性别")
+    print("9. 保存并退出")
 
     choice = input("请选择：")
 
@@ -46,6 +47,10 @@ while True:
         print("训练数据已重置")
 
     elif choice == "8":
+         player.save_sex()
+         print("性别已更新")
+
+    elif choice == "9":
          player.save()
          print("数据已保存")
     break
