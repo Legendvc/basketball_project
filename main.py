@@ -23,6 +23,7 @@ while True:
 
     if choice == "1":
         player.show_info()
+        player.show_level()
 
     elif choice == "2":
         player.shoot(True)
