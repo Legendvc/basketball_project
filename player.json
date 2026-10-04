@@ -1,0 +1,30 @@
+{
+    "name": "Richard",
+    "age": 31,
+    "position": "SG",
+    "shots": 5,
+    "made": 4,
+    "training_history": [
+        {
+            "shots": 5,
+            "made": 3,
+            "percentage": 60.0
+        },
+        {
+            "shots": 8,
+            "made": 3,
+            "percentage": 37.5
+        },
+        {
+            "shots": 2,
+            "made": 2,
+            "percentage": 100.0
+        },
+        {
+            "date": "2026-10-04",
+            "shots": 5,
+            "made": 4,
+            "percentage": 80.0
+        }
+    ]
+}
