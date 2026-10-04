@@ -13,7 +13,7 @@ class Player:
         self.shots = 0
         self.made = 0
 
-        self.sex = "未知"
+        self.gender = "未知"
         self.training_history = []
 
     def shoot(self, is_made):
@@ -54,7 +54,7 @@ class Player:
         print("命中率：", percentage, "%")
         print("评价：", evaluate_shooting(percentage))
         print("球员身份：篮球运动员")
-        print("性别：", self.sex)
+        print("性别：", self.gender)
 
     def save_training(self):
         percentage = calculate_percentage(
@@ -72,8 +72,8 @@ class Player:
 
         self.training_history.append(training)
 
-    def save_sex(self):
-        self.sex = input("请输入性别：")
+    def save_gender(self):
+        self.gender = input("请输入性别：")
         self.save()
 
         
@@ -99,7 +99,7 @@ class Player:
             "position": self.position,
             "shots": self.shots,
             "made": self.made,
-            "sex": self.sex,
+            "gender": self.gender,
             "training_history": self.training_history
         }
 
@@ -138,7 +138,7 @@ class Player:
 
             player.shots = data["shots"]
             player.made = data["made"]
-            player.sex = data.get("sex", "未知")
+            player.gender = data.get("gender", "未知")
             player.training_history = data.get(
                "training_history",
                []

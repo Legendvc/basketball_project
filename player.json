@@ -4,7 +4,7 @@
     "position": "SG",
     "shots": 5,
     "made": 4,
-    "sex": "男",
+    "gender": "女",
     "training_history": [
         {
             "shots": 5,

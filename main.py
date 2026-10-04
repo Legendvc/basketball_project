@@ -48,7 +48,7 @@ while True:
         print("训练数据已重置")
 
     elif choice == "8":
-         player.save_sex()
+         player.save_gender()
          print("性别已更新")
 
     elif choice == "9":
