@@ -6,13 +6,13 @@ def calculate_percentage(made, shots):
 
 def evaluate_shooting(percentage):
     if percentage >= 90:
-        return "NBA级别"
+        return "NBA级别！"
 
     elif percentage >= 80:
-        return "优秀"
+        return "优秀！"
 
     elif percentage >= 60:
-        return "良好"
+        return "良好！"
 
     else:
-        return "继续训练"
+        return "继续训练！"
