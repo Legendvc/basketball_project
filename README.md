@@ -10,6 +10,7 @@ A Python project for managing basketball player training data.
 - Shooting evaluation system
 
 ## Project Structure
+```text
 basketball_project
 ├── main.py
 ├── player.py
@@ -17,19 +18,23 @@ basketball_project
 ├── report.py
 ├── player.json
 └── README.md
+```
 
-## How to Run
-
-Run:
-
+##  How to Run
 ```bash
 python main.py
+```
 
-Technologies
+## Technologies
 - Python
 - JSON
 - Git
 - GitHub
 
-Author
+## Future Improvements
+
+## Version History
+
+## Author
 Richard
+
