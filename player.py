@@ -33,19 +33,23 @@ class Player:
         )
 
     def show_level(self):
+
         percentage = calculate_percentage(
             self.made,
-             self.shots
-        )
+            self.shots
+    )
 
-        if percentage >= 80:
-            print("球员等级：A")
+        if   percentage >= 80:
+               level = "A"
         elif percentage >= 60:
-            print("球员等级：B")
+               level = "B"
         else:
-            print("球员等级：C")
+              level = "C"
 
-        print("===== 球员资料 =====")
+        print("球员等级：", level)
+
+        
+        print("====== 球员资料 ======")
         print("姓名：", self.name)
         print("年龄：", self.age)
         print("位置：", self.position)
