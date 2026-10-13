@@ -1,7 +1,7 @@
 from player import Player
 
 
-player = Player.load()
+player = Player.load_from_json()
 
 
 while True:
