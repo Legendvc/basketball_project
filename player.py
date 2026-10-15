@@ -77,7 +77,16 @@ class Player:
             self.made,
             self.shots
         )
+    def get_level(self):
+        percentage = self.get_percentage()
 
+        if percentage >= 80:
+            return "A"
+        elif percentage >= 60:
+            return "B"
+        else:
+            return "C"
+        
     def save_training(self):
         percentage = self.get_percentage()
 
@@ -237,7 +246,24 @@ class Player:
         )
 
         return recent_training_days
+    def get_best_recent_effective_training_day(
+            self,
+            limit=RECENT_EFFECTIVE_TRAINING_DAY_LIMIT):
 
+        recent_training_days = self.get_recent_effective_training_days(
+            limit=limit
+        )
+
+        if not recent_training_days:
+            return None
+
+        return max(
+            recent_training_days,
+            key=lambda training: (
+                training["percentage"],
+                training["date"]
+        )
+    )
     def get_recent_effective_training_days_summary(
             self,
             limit=RECENT_EFFECTIVE_TRAINING_DAY_LIMIT):

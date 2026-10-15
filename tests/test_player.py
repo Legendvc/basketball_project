@@ -77,6 +77,47 @@ def test_recent_effective_training_days_acceptance_normal_calculation(player):
     ]
 
 
+def test_best_recent_effective_training_day_returns_highest_percentage(player):
+
+    player.training_history = [
+        {"date": "2026-06-01", "made": 6, "shots": 10},
+        {"date": "2026-06-02", "made": 8, "shots": 10},
+        {"date": "2026-06-03", "made": 7, "shots": 10}
+    ]
+
+    best_training_day = player.get_best_recent_effective_training_day()
+
+    assert best_training_day == {
+        "date": "2026-06-02",
+        "shots": 10,
+        "made": 8,
+        "percentage": 80.0
+    }
+
+
+def test_best_recent_effective_training_day_returns_newer_day_when_tied(player):
+
+    player.training_history = [
+        {"date": "2026-06-01", "made": 4, "shots": 5},
+        {"date": "2026-06-03", "made": 8, "shots": 10},
+        {"date": "2026-06-02", "made": 3, "shots": 5}
+    ]
+
+    best_training_day = player.get_best_recent_effective_training_day()
+
+    assert best_training_day["date"] == "2026-06-03"
+    assert best_training_day["percentage"] == 80.0
+
+
+def test_best_recent_effective_training_day_returns_none_without_effective_days(player):
+
+    player.training_history = [
+        {"date": "2026-06-01", "made": 2, "shots": 4}
+    ]
+
+    assert player.get_best_recent_effective_training_day() is None
+
+
 def test_recent_effective_training_days_acceptance_insufficient_data(player):
 
     player.training_history = [
