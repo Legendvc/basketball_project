@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from player import Player
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, model_validator
+from datetime import date
 
 app = FastAPI()
 
@@ -31,6 +32,17 @@ def get_player():
         "percentage": player.get_percentage(),
         "level": player.get_level()
     }
+class TrainingRequest(BaseModel):
+    training_date: date
+    shots: int = Field(ge=0, strict=True)
+    made: int = Field(ge=0, strict=True)
+
+    @model_validator(mode="after")
+    def validate_training(self):
+        if self.made > self.shots:
+            raise ValueError("命中次数不能大于投篮次数")
+
+        return self
 
 @app.get("/training-summary")
 def get_training_summary():
@@ -38,3 +50,20 @@ def get_training_summary():
     player = Player.load_from_json()
 
     return player.get_recent_effective_training_days_summary()
+
+@app.post("/training", status_code=201)
+def create_training(training: TrainingRequest):
+    player = Player.load_from_json()
+
+    record = player.add_training_record(
+        training_date=training.training_date,
+        shots=training.shots,
+        made=training.made
+    )
+
+    player.save_to_json()
+
+    return {
+        "message": "训练记录保存成功",
+        "training": record
+    }

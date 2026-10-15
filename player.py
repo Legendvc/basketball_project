@@ -99,6 +99,20 @@ class Player:
 
         self.training_history.append(training)
 
+    def add_training_record(self, training_date, shots, made):
+        percentage = calculate_percentage(made, shots)
+
+        training = {
+            "date": str(training_date),
+            "shots": shots,
+            "made": made,
+            "percentage": percentage
+        }
+
+        self.training_history.append(training)
+
+        return training
+
     def save_gender(self):
         self.gender = input("请输入性别：")
         self.save_to_json()
