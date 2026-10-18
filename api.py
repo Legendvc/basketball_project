@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from player import Player
+from db_utils import get_training_by_date
 from pydantic import BaseModel, Field, model_validator
 from datetime import date
 
@@ -66,4 +67,21 @@ def create_training(training: TrainingRequest):
     return {
         "message": "训练记录保存成功",
         "training": record
+    }
+
+@app.get("/training-by-date")
+def read_training_by_date(training_date: date):
+    rows = get_training_by_date(training_date.isoformat())
+
+    return {
+        "training_date": training_date.isoformat(),
+        "records": [
+            {
+                "id": row[0],
+                "date": row[1],
+                "shots": row[2],
+                "made": row[3]
+            }
+            for row in rows
+        ]
     }

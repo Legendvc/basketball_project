@@ -61,3 +61,23 @@ def test_post_training_success(monkeypatch):
     assert response.json()["training"]["percentage"] == 70.0
     assert len(player.training_history) == 1
     assert saved == [True]
+
+def test_get_training_by_date_no_records(monkeypatch):
+    def fake_get_training_by_date(training_date):
+        return []
+
+    monkeypatch.setattr(
+        "api.get_training_by_date",
+        fake_get_training_by_date
+    )
+
+    response = client.get(
+        "/training-by-date",
+        params={"training_date": "2026-10-18"}
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "training_date": "2026-10-18",
+        "records": []
+    }
