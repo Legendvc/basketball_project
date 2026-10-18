@@ -6,7 +6,7 @@ DB_FILE = "basketball.db"
 
 def get_training_by_date(training_date):
     conn = sqlite3.connect(DB_FILE)
-
+    conn.row_factory = sqlite3.Row  # 设置行工厂为 Row，以便按列名访问数据
     try:
         rows = conn.execute(
             """

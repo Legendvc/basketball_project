@@ -76,12 +76,12 @@ def read_training_by_date(training_date: date):
     return {
         "training_date": training_date.isoformat(),
         "records": [
-            {
-                "id": row[0],
-                "date": row[1],
-                "shots": row[2],
-                "made": row[3]
-            }
-            for row in rows
-        ]
+        {
+            "id": row["id"],
+            "date": row["date"],
+            "shots": row["shots"],
+            "made": row["made"]
+       }
+        for row in rows
+       ]
     }
