@@ -35,6 +35,7 @@ def test_post_training_invalid_made():
 
     assert response.status_code == 422
 
+
 def test_post_training_success(monkeypatch):
     player = Player("Test", 20, "SG")
     saved = []
@@ -62,6 +63,7 @@ def test_post_training_success(monkeypatch):
     assert len(player.training_history) == 1
     assert saved == [True]
 
+
 def test_get_training_by_date_no_records(monkeypatch):
     def fake_get_training_by_date(training_date):
         return []
@@ -81,6 +83,7 @@ def test_get_training_by_date_no_records(monkeypatch):
         "training_date": "2026-10-18",
         "records": []
     }
+
 
 def test_get_training_by_date_with_records(monkeypatch):
     def fake_get_training_by_date(training_date):
@@ -105,3 +108,13 @@ def test_get_training_by_date_with_records(monkeypatch):
 
     assert response.status_code == 200
     assert response.json()["records"][0]["made"] == 8
+
+
+def test_get_training_by_date_invalid_date():
+    response = client.get(
+        "/training-by-date",
+        params={"training_date": "not-a-date"}
+    )
+
+    assert response.status_code == 422
+    assert "detail" in response.json()
