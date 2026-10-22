@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from player import Player
 from db_utils import get_training_by_date, save_training_record
 from pydantic import BaseModel, Field, model_validator
@@ -46,11 +46,12 @@ class TrainingRequest(BaseModel):
         return self
 
 @app.get("/training-summary")
-def get_training_summary():
-
+def get_training_summary(limit: int = Query(default=5, ge=1)):
     player = Player.load_from_json()
 
-    return player.get_recent_effective_training_days_summary()
+    return player.get_recent_effective_training_days_summary(
+        limit=limit
+    )
 
 @app.post("/training", status_code=201)
 def create_training(training: TrainingRequest):
