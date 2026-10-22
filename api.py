@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from player import Player
-from db_utils import get_training_by_date
+from db_utils import get_training_by_date, save_training_record
 from pydantic import BaseModel, Field, model_validator
 from datetime import date
 
@@ -64,9 +64,17 @@ def create_training(training: TrainingRequest):
 
     player.save_to_json()
 
+    # 新增：保存到 SQLite
+    record_id = save_training_record(
+        training.training_date.isoformat(),
+        training.shots,
+        training.made
+    )
+
     return {
         "message": "训练记录保存成功",
-        "training": record
+        "training": record,
+        "record_id": record_id
     }
 
 @app.get("/training-by-date")

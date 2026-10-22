@@ -21,3 +21,22 @@ def get_training_by_date(training_date):
 
     finally:
         conn.close()
+
+def save_training_record(training_date, shots, made):
+    conn = sqlite3.connect(DB_FILE)
+
+    try:
+        cursor = conn.execute(
+            """
+            INSERT INTO training (date, shots, made)
+            VALUES (?, ?, ?)
+            """,
+            (training_date, shots, made)
+        )
+
+        conn.commit()
+        return cursor.lastrowid
+
+    finally:
+        conn.close()
+        
