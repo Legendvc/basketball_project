@@ -173,3 +173,38 @@ def test_training_end_to_end(tmp_path, monkeypatch):
     assert records[0]["id"] == record_id
     assert records[0]["shots"] == 10
     assert records[0]["made"] == 8
+
+def test_training_summary_limit(monkeypatch):
+    player = Player("Test", 20, "SG")
+    received_limits = []
+
+    def fake_summary(limit=5):
+        received_limits.append(limit)
+        return {"limit": limit}
+
+    monkeypatch.setattr(Player, "load_from_json", lambda: player)
+    monkeypatch.setattr(
+        player,
+        "get_recent_effective_training_days_summary",
+        fake_summary
+    )
+
+    # 指定 limit=3
+    response = client.get("/training-summary?limit=3")
+    assert response.status_code == 200
+    assert response.json()["limit"] == 3
+
+    # 不指定 limit，应该使用默认值 5
+    response = client.get("/training-summary")
+    assert response.status_code == 200
+    assert response.json()["limit"] == 5
+
+    # limit=0 应返回 422
+    response = client.get("/training-summary?limit=0")
+    assert response.status_code == 422
+
+    # 负数也应返回 422
+    response = client.get("/training-summary?limit=-2")
+    assert response.status_code == 422
+
+    assert received_limits == [3, 5]
