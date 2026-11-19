@@ -3,3 +3,10 @@
 htmlcov/
 .pytest_cache/
 __pycache__/
+
+# Local training databases and their SQLite sidecar files.
+/basketball.db
+/basketball_live.db
+/basketball_api_trial.db
+/basketball_migration_demo.db
+/basketball*.db-*
