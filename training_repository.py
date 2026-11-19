@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
 from models import Training
@@ -50,3 +50,29 @@ def get_trainings_by_user(
     )
 
     return list(session.scalars(statement).all())
+
+
+def update_training(
+    session: Session,
+    training_id: int,
+    user_id: int,
+    training_date: str,
+    shots: int,
+    made: int,
+) -> Training | None:
+    statement = (
+        update(Training)
+        .where(Training.id == training_id, Training.user_id == user_id)
+        .values(date=training_date, shots=shots, made=made)
+        .returning(Training)
+    )
+    return session.scalars(statement).one_or_none()
+
+
+def delete_training(session: Session, training_id: int, user_id: int) -> bool:
+    statement = (
+        delete(Training)
+        .where(Training.id == training_id, Training.user_id == user_id)
+        .returning(Training.id)
+    )
+    return session.scalar(statement) is not None
