@@ -355,3 +355,70 @@ def test_main_application_serves_v2_schema(main_client):
     assert "get" in paths["/training-by-date"]
     assert "post" in paths["/training"]
     assert "get" in paths["/training-summary"]
+
+
+def test_update_and_delete_training_refresh_summary(main_client):
+    params = {"user_id": 1}
+    path = "/v2/training/101"
+    new_date = "2026-10-16"
+    updated = main_client.put(
+        path,
+        params=params,
+        json={"training_date": new_date, "shots": 12, "made": 6},
+    )
+    assert updated.status_code == 200
+    assert updated.json() == {"id": 101, "date": new_date, "shots": 12, "made": 6}
+
+    original_day = main_client.get(
+        "/v2/training-by-date",
+        params={**params, "training_date": "2026-10-15"},
+    )
+    assert original_day.json()["records"] == []
+    summary_path = "/v2/training-summary"
+    summary = main_client.get(summary_path, params=params).json()
+    assert summary["training_days"] == 1
+    assert summary["days"] == [
+        {"date": new_date, "shots": 12, "made": 6, "percentage": 50.0},
+    ]
+
+    deleted = main_client.delete(path, params=params)
+    assert deleted.status_code == 204
+    assert deleted.content == b""
+    assert main_client.get(summary_path, params=params).json()["days"] == []
+
+
+@pytest.mark.parametrize("method", ["PUT", "DELETE"])
+@pytest.mark.parametrize("training_id", [102, 999])
+def test_training_mutation_rejects_missing_or_other_users_record(client, method, training_id):
+    options = {"params": {"user_id": 1}}
+    if method == "PUT":
+        options["json"] = {"training_date": "2026-10-15", "shots": 7, "made": 4}
+
+    response = client.request(method, f"/training/{training_id}", **options)
+    assert response.status_code == 404
+    assert response.json() == {"detail": "训练记录不存在"}
+
+    other_user = client.get(
+        "/training-by-date",
+        params={"user_id": 2, "training_date": "2026-10-15"},
+    )
+    assert other_user.json()["records"] == [
+        {"id": 102, "date": "2026-10-15", "shots": 20, "made": 12},
+    ]
+
+
+def test_update_training_rejects_invalid_counts(client):
+    invalid = client.put(
+        "/training/101",
+        params={"user_id": 1},
+        json={"training_date": "2026-10-15", "shots": 5, "made": 6},
+    )
+    assert invalid.status_code == 422
+
+    records = client.get(
+        "/training-by-date",
+        params={"user_id": 1, "training_date": "2026-10-15"},
+    )
+    assert records.json()["records"] == [
+        {"id": 101, "date": "2026-10-15", "shots": 10, "made": 8},
+    ]

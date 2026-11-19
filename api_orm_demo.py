@@ -1,14 +1,20 @@
 from datetime import date
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Path, Query, Response
 from models import User
 from sqlalchemy.orm import Session
 from database import SessionLocal
-from training_repository import create_training, get_training_by_date
+from training_repository import (
+    create_training,
+    delete_training,
+    get_training_by_date,
+    update_training,
+)
 from schemas import (
     TrainingCreate,
     TrainingResponse,
     TrainingByDateResponse,
+    TrainingUpdate,
 )
 
 from schemas import TrainingSummaryResponse
@@ -87,6 +93,47 @@ def post_training(
         )
 
     return response
+
+
+@app.put("/training/{training_id}", response_model=TrainingResponse)
+def put_training(
+    training: TrainingUpdate,
+    training_id: int = Path(ge=1),
+    user_id: int = Query(ge=1),
+    session: Session = Depends(get_db),
+):
+    with session.begin():
+        record = update_training(
+            session=session,
+            training_id=training_id,
+            user_id=user_id,
+            training_date=training.training_date.isoformat(),
+            shots=training.shots,
+            made=training.made,
+        )
+        if record is None:
+            raise HTTPException(status_code=404, detail="训练记录不存在")
+
+        response = TrainingResponse(
+            id=record.id,
+            date=record.date,
+            shots=record.shots,
+            made=record.made,
+        )
+
+    return response
+
+
+@app.delete("/training/{training_id}", status_code=204)
+def remove_training(
+    training_id: int = Path(ge=1),
+    user_id: int = Query(ge=1),
+    session: Session = Depends(get_db),
+):
+    with session.begin():
+        if not delete_training(session, training_id, user_id):
+            raise HTTPException(status_code=404, detail="训练记录不存在")
+    return Response(status_code=204)
 
 
 @app.get(

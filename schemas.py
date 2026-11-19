@@ -3,8 +3,7 @@ from datetime import date
 from pydantic import BaseModel, Field, model_validator
 
 
-class TrainingCreate(BaseModel):
-    user_id: int = Field(ge=1, strict=True)
+class TrainingUpdate(BaseModel):
     training_date: date
     shots: int = Field(ge=0, strict=True)
     made: int = Field(ge=0, strict=True)
@@ -15,6 +14,10 @@ class TrainingCreate(BaseModel):
             raise ValueError("命中次数不能大于投篮次数")
 
         return self
+
+
+class TrainingCreate(TrainingUpdate):
+    user_id: int = Field(ge=1, strict=True)
 
 
 class TrainingResponse(BaseModel):
