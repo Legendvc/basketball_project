@@ -1,210 +1,151 @@
+import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import URL, create_engine
+from sqlalchemy.orm import Session
+
 from api import app
+from api_orm_demo import app as orm_app, get_db
+from models import Base, Training, User
 from player import Player
 
-client = TestClient(app)
+
+@pytest.fixture
+def client(tmp_path, monkeypatch):
+    engine = create_engine(
+        URL.create("sqlite", database=str(tmp_path / "training.db"))
+    )
+    player = Player("Richard", 31, "SG")
+    monkeypatch.setattr(Player, "load_from_json", lambda: player)
+
+    def fail_on_json_write(self):
+        pytest.fail("训练接口应只写入 SQLite")
+
+    monkeypatch.setattr(Player, "save_to_json", fail_on_json_write)
+
+    def override_get_db():
+        with Session(engine) as session:
+            yield session
+
+    try:
+        Base.metadata.create_all(engine)
+        with Session(engine) as session, session.begin():
+            session.add_all([
+                User(id=1, username="Richard"),
+                User(id=2, username="Alice"),
+            ])
+            session.flush()
+            session.add_all([
+                Training(user_id=1, date="2026-10-15", shots=10, made=8),
+                Training(user_id=2, date="2026-10-15", shots=20, made=12),
+            ])
+
+        monkeypatch.setitem(app.dependency_overrides, get_db, override_get_db)
+        monkeypatch.setitem(orm_app.dependency_overrides, get_db, override_get_db)
+        with TestClient(app) as test_client:
+            yield test_client
+    finally:
+        engine.dispose()
 
 
-def test_post_training_invalid_made():
+def test_post_training_invalid_made(client):
     response = client.post(
         "/training",
-        json={
-            "training_date": "2026-10-15",
-            "shots": 10,
-            "made": 12
-        }
+        json={"training_date": "2026-10-15", "shots": 10, "made": 12},
     )
-
     assert response.status_code == 422
 
-from fastapi.testclient import TestClient
-from api import app
 
-client = TestClient(app)
-
-
-def test_post_training_success(monkeypatch):
-    player = Player("Test", 20, "SG")
-    saved = []
-    db_records = []
-
-    def fake_load():
-        return player
-
-    def fake_save(self):
-        saved.append(True)
-
-    def fake_save_training_record(training_date, shots, made):
-        db_records.append((training_date, shots, made))
-        return 123
-
-    monkeypatch.setattr(Player, "load_from_json", fake_load)
-    monkeypatch.setattr(Player, "save_to_json", fake_save)
-    monkeypatch.setattr(
-        "api.save_training_record",
-        fake_save_training_record
-    )
-
+def test_post_training_success(client):
     response = client.post(
         "/training",
-        json={
-            "training_date": "2026-10-15",
-            "shots": 10,
-            "made": 7
-        }
+        json={"training_date": "2026-10-16", "shots": 10, "made": 7},
     )
-
     assert response.status_code == 201
-    assert response.json()["training"]["percentage"] == 70.0
-    assert response.json()["record_id"] == 123
-    assert len(player.training_history) == 1
-    assert saved == [True]
-    assert db_records == [("2026-10-15", 10, 7)]
-
-
-def test_get_training_by_date_no_records(monkeypatch):
-    def fake_get_training_by_date(training_date):
-        return []
-
-    monkeypatch.setattr(
-        "api.get_training_by_date",
-        fake_get_training_by_date
-    )
-
-    response = client.get(
-        "/training-by-date",
-        params={"training_date": "2026-10-18"}
-    )
-
-    assert response.status_code == 200
-    assert response.json() == {
-        "training_date": "2026-10-18",
-        "records": []
+    body = response.json()
+    assert body["record_id"] > 0
+    assert body == {
+        "message": "训练记录保存成功",
+        "training": {
+            "date": "2026-10-16",
+            "shots": 10,
+            "made": 7,
+            "percentage": 70.0,
+        },
+        "record_id": body["record_id"],
     }
 
 
-def test_get_training_by_date_with_records(monkeypatch):
-    def fake_get_training_by_date(training_date):
-        return [
-            {
-                "id": 1,
-                "date": "2026-10-15",
-                "shots": 10,
-                "made": 8
-            }
-        ]
-
-    monkeypatch.setattr(
-        "api.get_training_by_date",
-        fake_get_training_by_date
-    )
-
+def test_get_training_by_date_no_records(client):
     response = client.get(
-        "/training-by-date",
-        params={"training_date": "2026-10-15"}
+        "/training-by-date", params={"training_date": "2026-10-18"}
     )
-
     assert response.status_code == 200
-    assert response.json()["records"][0]["made"] == 8
+    assert response.json() == {"training_date": "2026-10-18", "records": []}
 
 
-def test_get_training_by_date_invalid_date():
+def test_get_training_by_date_with_records(client):
     response = client.get(
-        "/training-by-date",
-        params={"training_date": "not-a-date"}
+        "/training-by-date", params={"training_date": "2026-10-15"}
     )
+    assert response.status_code == 200
+    assert response.json()["records"] == [
+        {"id": 1, "date": "2026-10-15", "shots": 10, "made": 8}
+    ]
 
+
+def test_get_training_by_date_invalid_date(client):
+    response = client.get(
+        "/training-by-date", params={"training_date": "not-a-date"}
+    )
     assert response.status_code == 422
     assert "detail" in response.json()
 
-import sqlite3
-import db_utils
 
-
-def test_training_end_to_end(tmp_path, monkeypatch):
-    # 1. 创建临时数据库
-    db_file = tmp_path / "test_api.db"
-    monkeypatch.setattr(db_utils, "DB_FILE", str(db_file))
-
-    conn = sqlite3.connect(db_file)
-    conn.execute("""
-        CREATE TABLE training (
-            id INTEGER PRIMARY KEY,
-            date TEXT NOT NULL,
-            shots INTEGER NOT NULL,
-            made INTEGER NOT NULL
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-    # 2. 模拟 JSON 读写，保护真实文件
-    player = Player("Test", 20, "SG")
-    monkeypatch.setattr(
-        Player, "load_from_json", lambda: player
-    )
-    monkeypatch.setattr(
-        Player, "save_to_json", lambda self: None
-    )
-
-    # 3. POST 保存训练记录
-    response = client.post(
+def test_training_end_to_end(client):
+    training_date = "2026-10-15"
+    created = client.post(
         "/training",
-        json={
-            "training_date": "2026-10-20",
-            "shots": 10,
-            "made": 8
-        }
+        json={"training_date": training_date, "shots": 5, "made": 2},
     )
+    assert created.status_code == 201
+    new_record = {
+        "id": created.json()["record_id"],
+        "date": training_date,
+        "shots": 5,
+        "made": 2,
+    }
 
-    assert response.status_code == 201
-    record_id = response.json()["record_id"]
-
-    # 4. GET 查询刚保存的记录
-    response = client.get(
-        "/training-by-date",
-        params={"training_date": "2026-10-20"}
+    legacy = client.get(
+        "/training-by-date", params={"training_date": training_date}
     )
-
-    assert response.status_code == 200
-    records = response.json()["records"]
-
-    assert len(records) == 1
-    assert records[0]["id"] == record_id
-    assert records[0]["shots"] == 10
-    assert records[0]["made"] == 8
-
-def test_training_summary_limit(monkeypatch):
-    player = Player("Test", 20, "SG")
-    received_limits = []
-
-    def fake_summary(limit=5):
-        received_limits.append(limit)
-        return {"limit": limit}
-
-    monkeypatch.setattr(Player, "load_from_json", lambda: player)
-    monkeypatch.setattr(
-        player,
-        "get_recent_effective_training_days_summary",
-        fake_summary
+    v2 = client.get(
+        "/v2/training-by-date",
+        params={"training_date": training_date, "user_id": 1},
     )
+    assert legacy.status_code == v2.status_code == 200
+    assert legacy.json()["records"] == v2.json()["records"] == [
+        {"id": 1, "date": training_date, "shots": 10, "made": 8},
+        new_record,
+    ]
 
-    # 指定 limit=3
-    response = client.get("/training-summary?limit=3")
-    assert response.status_code == 200
-    assert response.json()["limit"] == 3
+    legacy_summary = client.get("/training-summary")
+    v2_summary = client.get("/v2/training-summary", params={"user_id": 1})
+    assert legacy_summary.status_code == v2_summary.status_code == 200
+    summary = legacy_summary.json()
+    assert summary == v2_summary.json()
+    assert summary["training_days"] == 1
+    assert summary["shots"] == 15
+    assert summary["made"] == 10
+    assert summary["percentage"] == 66.7
 
-    # 不指定 limit，应该使用默认值 5
-    response = client.get("/training-summary")
-    assert response.status_code == 200
-    assert response.json()["limit"] == 5
 
-    # limit=0 应返回 422
-    response = client.get("/training-summary?limit=0")
-    assert response.status_code == 422
+def test_training_summary_limit(client):
+    explicit = client.get("/training-summary", params={"limit": 3})
+    default = client.get("/training-summary")
+    assert explicit.status_code == default.status_code == 200
+    assert explicit.json()["required_training_days"] == 3
+    assert default.json()["required_training_days"] == 5
 
-    # 负数也应返回 422
-    response = client.get("/training-summary?limit=-2")
-    assert response.status_code == 422
-
-    assert received_limits == [3, 5]
+    for invalid_limit in (0, -2):
+        response = client.get("/training-summary", params={"limit": invalid_limit})
+        assert response.status_code == 422
